@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Draggable & Rotatable Image Table</title>
+    <style>
+        .drag-table {
+            border-collapse: collapse;
+            width: 100%;
+            margin: 20px auto;
+        }
+
+        .drag-table td {
+            border: 2px solid #ddd;
+            width: 200px;
+            height: 200px;
+            text-align: center;
+            padding: 10px;
+            position: relative;
+        }
+
+        .image-container {
+            position: relative;
+            display: inline-block;
+            width: 100%;
+            height: 100%;
+        }
+
+        .draggable-image {
+            max-width: 180px;
+            max-height: 180px;
+            cursor: move;
+            transition: all 0.3s;
+        }
+
+        .rotate-btn {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 2px 8px;
+            border-radius: 3px;
+            cursor: pointer;
+            z-index: 10;
+        }
+
+        .dragging {
+            opacity: 0.5;
+            transform: scale(0.9);
+        }
+
+        .drop-target {
+            background-color: #f0f8ff;
+        }
+    </style>
+</head>
+<body>
+    <table class="drag-table">
+        <tr>
+            <td>
+                <div class="image-container" draggable="true">
+                    <img src="https://picsum.photos/100" class="draggable-image" alt="Image 1" data-rotation="0">
+                    <button class="rotate-btn" title="Rotate (or Shift+Click)">↻</button>
+                </div>
+            </td>
+            <td>
+                <div class="image-container" draggable="true">
+                    <img src="https://picsum.photos/101" class="draggable-image" alt="Image 2" data-rotation="0">
+                    <button class="rotate-btn" title="Rotate (or Shift+Click)">↻</button>
+                </div>
+            </td>
+            <td></td>
+        </tr>
+        <tr>
+            <td></td>
+            <td>
+                <div class="image-container" draggable="true">
+                    <img src="https://picsum.photos/102" class="draggable-image" alt="Image 3" data-rotation="0">
+                    <button class="rotate-btn" title="Rotate (or Shift+Click)">↻</button>
+                </div>
+            </td>
+            <td></td>
+        </tr>
+    </table>
+
+    <script>
+        let draggedItem = null;
+
+        // Drag and Drop functionality
+        document.addEventListener('dragstart', (e) => {
+            if (e.target.classList.contains('image-container')) {
+                draggedItem = e.target;
+                e.target.classList.add('dragging');
+                e.dataTransfer.effectAllowed = 'move';
+            }
+        });
+
+        document.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            const target = e.target.closest('td');
+            if (target && draggedItem) {
+                target.classList.add('drop-target');
+            }
+        });
+
+        document.addEventListener('dragleave', (e) => {
+            const target = e.target.closest('td');
+            if (target) target.classList.remove('drop-target');
+        });
+
+        document.addEventListener('drop', (e) => {
+            e.preventDefault();
+            const target = e.target.closest('td');
+            
+            if (target && draggedItem) {
+                target.classList.remove('drop-target');
+                const targetContainer = target.querySelector('.image-container');
+                
+                if (!targetContainer) {
+                    target.appendChild(draggedItem);
+                } else {
+                    const parentCell = draggedItem.parentNode;
+                    parentCell.appendChild(targetContainer);
+                    target.appendChild(draggedItem);
+                }
+            }
+        });
+
+        document.addEventListener('dragend', () => {
+            if (draggedItem) {
+                draggedItem.classList.remove('dragging');
+                draggedItem = null;
+            }
+        });
+
+        // Rotation functionality
+        function rotateImage(img, increment = 90) {
+            const currentRotation = parseInt(img.dataset.rotation) || 0;
+            const newRotation = (currentRotation + increment) % 360;
+            img.style.transform = `rotate(${newRotation}deg)`;
+            img.dataset.rotation = newRotation;
+        }
+
+        // Button click rotation
+        document.addEventListener('click', (e) => {
+            if (e.target.classList.contains('rotate-btn')) {
+                const container = e.target.closest('.image-container');
+                const img = container.querySelector('.draggable-image');
+                rotateImage(img);
+            }
+        });
+
+        // Shift+Click rotation
+        document.addEventListener('click', (e) => {
+            if (e.shiftKey && e.target.classList.contains('draggable-image')) {
+                rotateImage(e.target, -90);
+            }
+        });
+    </script>
+</body>
+</html>
