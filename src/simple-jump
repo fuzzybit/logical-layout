@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>8-bit Side Scroller</title>
+    <style>
+        canvas {
+            border: 2px solid black;
+            background: #87CEEB;
+        }
+        body {
+            display: flex;
+            justify-content: center;
+            background: #333;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="gameCanvas" width="800" height="400"></canvas>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Game state
+        const GRAVITY = 0.5;
+        const JUMP_POWER = -12;
+        const SPEED = 5;
+        const RUN_SPEED = 8;
+        
+        const player = {
+            x: 100,
+            y: 300,
+            width: 32,
+            height: 64,
+            velocityY: 0,
+            isJumping: false,
+            direction: 'right',
+            state: 'idle',
+            animationFrame: 0,
+            lastUpdate: 0
+        };
+
+        let keys = {};
+        let cameraOffset = 0;
+
+        // Sprite colors (simple 8-bit style)
+        const colors = {
+            idle: '#0000FF',
+            walk: ['#0000FF', '#0000CC'],
+            run: ['#0000AA', '#000088'],
+            jump: '#000066'
+        };
+
+        // Event listeners
+        window.addEventListener('keydown', e => keys[e.key] = true);
+        window.addEventListener('keyup', e => keys[e.key] = false);
+
+        function updatePlayer() {
+            // Horizontal movement
+            let moveSpeed = SPEED;
+            player.state = 'idle';
+
+            if (keys.Shift) moveSpeed = RUN_SPEED;
+            
+            if (keys.ArrowLeft) {
+                player.x -= moveSpeed;
+                player.direction = 'left';
+                player.state = keys.Shift ? 'run' : 'walk';
+            }
+            if (keys.ArrowRight) {
+                player.x += moveSpeed;
+                player.direction = 'right';
+                player.state = keys.Shift ? 'run' : 'walk';
+            }
+
+            // Jumping
+            if (keys[' '] && !player.isJumping) {
+                player.velocityY = JUMP_POWER;
+                player.isJumping = true;
+                player.state = 'jump';
+            }
+
+            // Apply gravity
+            player.velocityY += GRAVITY;
+            player.y += player.velocityY;
+
+            // Ground collision
+            if (player.y + player.height > canvas.height - 30) {
+                player.y = canvas.height - 30 - player.height;
+                player.velocityY = 0;
+                player.isJumping = false;
+            }
+
+            // Update camera
+            cameraOffset = player.x - canvas.width/2 + player.width/2;
+            cameraOffset = Math.max(0, cameraOffset);
+        }
+
+        function drawPlayer() {
+            // Determine color based on state
+            let color = colors.idle;
+            const now = Date.now();
+            
+            if (player.state === 'walk') {
+                color = colors.walk[Math.floor(now / 200) % 2];
+            } else if (player.state === 'run') {
+                color = colors.run[Math.floor(now / 150) % 2];
+            } else if (player.state === 'jump') {
+                color = colors.jump;
+            }
+
+            // Flip direction
+            const scaleX = player.direction === 'left' ? -1 : 1;
+            
+            ctx.save();
+            ctx.translate(player.x - cameraOffset, player.y);
+            ctx.scale(scaleX, 1);
+            
+            ctx.fillStyle = color;
+            ctx.fillRect(-player.width/2, 0, player.width, player.height);
+            
+            ctx.restore();
+        }
+
+        function gameLoop() {
+            // Clear canvas
+            ctx.fillStyle = '#87CEEB';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Draw ground
+            ctx.fillStyle = '#228B22';
+            ctx.fillRect(0, canvas.height - 30, canvas.width, 30);
+
+            // Update and draw player
+            updatePlayer();
+            drawPlayer();
+
+            // Next frame
+            requestAnimationFrame(gameLoop);
+        }
+
+        // Start the game
+        gameLoop();
+    </script>
+</body>
+</html>
